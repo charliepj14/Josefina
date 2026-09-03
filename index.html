@@ -81,7 +81,7 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // -----------------------------------------------------------
 
 const NEEDS_SETUP = SUPABASE_URL.startsWith("YOUR_") || SUPABASE_ANON_KEY.startsWith("YOUR_");
-const supabase = NEEDS_SETUP ? null : window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = NEEDS_SETUP ? null : window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const STATUS = [
   {key:'active', label:'active', color:'#3E8577'},
@@ -173,12 +173,12 @@ function App(){
   useEffect(()=>{
     if(NEEDS_SETUP) return;
     (async ()=>{
-      const {data, error} = await supabase.from('projects').select('*').order('num');
+      const {data, error} = await supabaseClient.from('projects').select('*').order('num');
       if(error){ console.error(error); setProjects([]); return; }
       if(data && data.length){ setProjects(data); }
       else {
         // first run: seed the table
-        await supabase.from('projects').upsert(DEFAULT_PROJECTS);
+        await supabaseClient.from('projects').upsert(DEFAULT_PROJECTS);
         setProjects(DEFAULT_PROJECTS);
       }
     })();
@@ -187,7 +187,7 @@ function App(){
   const updateProject = async (updated) => {
     setProjects(prev => prev.map(p => p.id===updated.id ? updated : p));
     setSaveState('saving...');
-    const {error} = await supabase.from('projects').update({
+    const {error} = await supabaseClient.from('projects').update({
       name: updated.name, tier: updated.tier, descr: updated.descr, status: updated.status,
       health: updated.health, next_action: updated.next_action, notes: updated.notes,
       updated_at: new Date().toISOString()
@@ -198,7 +198,7 @@ function App(){
 
   const removeProject = async (id) => {
     setProjects(prev => prev.filter(p => p.id!==id));
-    await supabase.from('projects').delete().eq('id', id);
+    await supabaseClient.from('projects').delete().eq('id', id);
   };
 
   const addProject = async () => {
@@ -208,7 +208,7 @@ function App(){
     const num = String(projects.length+1).padStart(2,'0');
     const row = {id, name, num, tier:3, descr:'', status:'planning', health:20, next_action:'', notes:''};
     setProjects(prev => [...prev, row]);
-    await supabase.from('projects').insert(row);
+    await supabaseClient.from('projects').insert(row);
   };
 
   if(NEEDS_SETUP) return <SetupNotice />;
